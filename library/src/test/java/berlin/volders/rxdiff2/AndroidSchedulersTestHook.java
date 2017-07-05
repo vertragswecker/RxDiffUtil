@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import rx.Scheduler;
 import rx.android.plugins.RxAndroidPlugins;

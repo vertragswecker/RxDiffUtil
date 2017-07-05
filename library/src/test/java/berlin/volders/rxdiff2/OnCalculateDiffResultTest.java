@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView.Adapter;
@@ -28,9 +28,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.lang.ref.WeakReference;
 import java.util.ConcurrentModificationException;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import rx.Producer;
-import rx.functions.Actions;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Consumer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -47,9 +47,11 @@ public class OnCalculateDiffResultTest {
     @Mock
     Callback callback;
     @Mock
-    Producer producer;
+    Consumer producer;
     @Mock
     DiffUtil.Callback cb;
+    @Mock
+    BiConsumer empty;
 
     OnCalculateDiffResult<?, ?> result;
 
@@ -61,16 +63,16 @@ public class OnCalculateDiffResultTest {
 
     @Test
     public void applyDiff() throws Exception {
-        result.applyDiff(Actions.empty());
+        result.applyDiff(empty);
 
-        verify(producer).request(anyLong());
+        verify(producer).accept(anyLong());
     }
 
     @Test(expected = ConcurrentModificationException.class)
     public void applyDiff_concurrently() throws Exception {
         result.onChanged();
 
-        result.applyDiff(Actions.empty());
+        result.applyDiff(empty);
     }
 
     @Test

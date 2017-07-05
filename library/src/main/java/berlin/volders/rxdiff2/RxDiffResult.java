@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
@@ -22,15 +22,15 @@ import android.support.v7.widget.RecyclerView;
 
 import java.util.ConcurrentModificationException;
 
-import rx.Completable;
-import rx.Observable;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action2;
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.BiConsumer;
 
 /**
  * {@code RxDiffResult} provides an interface to apply the result of the
  * {@code RxDiffUtil.calculateDiff()} methods family. Only one
- * {@code Completable} returned by {@link #applyDiff(Action2)} should be
+ * {@code Completable} returned by {@link #applyDiff(BiConsumer)} should be
  * active at any time. Simultaneous application of the diff results in a
  * {@link ConcurrentModificationException}.
  *
@@ -40,9 +40,9 @@ import rx.functions.Action2;
 public class RxDiffResult<A extends RecyclerView.Adapter, T> {
 
     @VisibleForTesting
-    final Observable<OnCalculateDiffResult<A, T>> o;
+    final Flowable<OnCalculateDiffResult<A, T>> o;
 
-    RxDiffResult(Observable<OnCalculateDiffResult<A, T>> o) {
+    RxDiffResult(Flowable<OnCalculateDiffResult<A, T>> o) {
         this.o = o.share().observeOn(AndroidSchedulers.mainThread());
     }
 
@@ -50,7 +50,7 @@ public class RxDiffResult<A extends RecyclerView.Adapter, T> {
      * @param onUpdate callback to update the data set
      * @return a {@link Completable} to apply
      */
-    public Completable applyDiff(@NonNull Action2<? super A, ? super T> onUpdate) {
-        return o.doOnNext(new OnApplyDiff<>(onUpdate)).share().toCompletable();
+    public Completable applyDiff(@NonNull BiConsumer<? super A, ? super T> onUpdate) {
+        return o.doOnNext(new OnApplyDiff<>(onUpdate)).share().ignoreElements();
     }
 }

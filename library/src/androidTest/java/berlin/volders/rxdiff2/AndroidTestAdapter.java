@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,22 +23,22 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 
-import rx.Observer;
-import rx.functions.Action2;
-import rx.functions.Func1;
-import rx.subjects.ReplaySubject;
+import io.reactivex.Observer;
+import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Function;
+import io.reactivex.subjects.ReplaySubject;
 
 import static android.support.test.InstrumentationRegistry.getContext;
 
 class AndroidTestAdapter<T> extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements
-        Func1<AndroidTestAdapter<T>, T>, Action2<AndroidTestAdapter<T>, T>,
+        Function<AndroidTestAdapter<T>, T>, BiConsumer<AndroidTestAdapter<T>, T>,
         RxDiffUtil.Callback<AndroidTestAdapter<T>, T>, RxDiffUtil.Callback2<T> {
 
     final ReplaySubject<T> ts = ReplaySubject.create();
-    final Func1<T, Integer> sizeOf;
+    final Function<T, Integer> sizeOf;
 
-    AndroidTestAdapter(Func1<T, Integer> sizeOf) {
-        this.ts.onNext(null);
+    AndroidTestAdapter(Function<T, Integer> sizeOf, T emptyState) {
+        this.ts.onNext(emptyState);
         this.sizeOf = sizeOf;
     }
 
@@ -54,24 +54,28 @@ class AndroidTestAdapter<T> extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        return sizeOf.call(call(this));
+        try {
+            return sizeOf.apply(apply(this));
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 
     @Override
-    public void call(AndroidTestAdapter<T> adapter, T t) {
+    public void accept(AndroidTestAdapter<T> adapter, T t) {
         adapter.ts.onNext(t);
     }
 
     @Override
-    public T call(AndroidTestAdapter<T> adapter) {
-        int last = adapter.ts.size() - 1;
-        return adapter.ts.skip(last).toBlocking().first();
+    public T apply(AndroidTestAdapter<T> adapter) {
+        int last = adapter.ts.getValues().length - 1;
+        return adapter.ts.skip(last).blockingFirst();
     }
 
     @NonNull
     @Override
     public DiffUtil.Callback diffUtilCallback(@NonNull AndroidTestAdapter<T> adapter, @Nullable T newData) {
-        return diffUtilCallback(call(adapter), newData);
+        return diffUtilCallback(apply(adapter), newData);
     }
 
     @NonNull
@@ -84,12 +88,12 @@ class AndroidTestAdapter<T> extends RecyclerView.Adapter<RecyclerView.ViewHolder
         ts.skip(1).subscribe(subscriber);
     }
 
-    Func1<AndroidTestAdapter<T>, T> notifyOnGet() {
-        return new Func1<AndroidTestAdapter<T>, T>() {
+    Function<AndroidTestAdapter<T>, T> notifyOnGet() {
+        return new Function<AndroidTestAdapter<T>, T>() {
             @Override
-            public T call(AndroidTestAdapter<T> adapter) {
+            public T apply(AndroidTestAdapter<T> adapter) {
                 adapter.notifyDataSetChanged();
-                return adapter.call(adapter);
+                return adapter.apply(adapter);
             }
         };
     }

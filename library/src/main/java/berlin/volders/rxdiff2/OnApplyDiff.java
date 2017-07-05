@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
-import rx.Completable;
-import rx.Observable;
-import rx.functions.Func1;
+import android.support.annotation.VisibleForTesting;
+import android.support.v7.widget.RecyclerView.Adapter;
 
-class AndroidTestFunction<T> implements Func1<Observable<T>, Completable> {
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Consumer;
 
-    final AndroidTestAdapter<T> adapter;
-    private final Func1<AndroidTestAdapter<T>, T> object;
+class OnApplyDiff<A extends Adapter, T> implements Consumer<OnCalculateDiffResult<A, T>> {
 
-    AndroidTestFunction(AndroidTestAdapter<T> adapter, Func1<AndroidTestAdapter<T>, T> object) {
-        this.adapter = adapter;
-        this.object = object;
+    @VisibleForTesting
+    final BiConsumer<? super A, ? super T> onUpdate;
+
+    OnApplyDiff(BiConsumer<? super A, ? super T> onUpdate) {
+        this.onUpdate = onUpdate;
     }
 
     @Override
-    public Completable call(Observable<T> o) {
-        return o.to(RxDiffUtil.<AndroidTestAdapter<T>, T>with(adapter))
-                .calculateDiff(object, adapter)
-                .applyDiff(adapter);
+    public void accept(@NonNull OnCalculateDiffResult<A, T> result) throws Exception {
+        result.applyDiff(onUpdate);
     }
 }

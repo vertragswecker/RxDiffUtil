@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,16 +24,16 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
-import rx.Completable;
-import rx.Observable;
-import rx.functions.Func1;
-import rx.observers.TestSubscriber;
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.functions.Function;
+import io.reactivex.observers.TestObserver;
 
 public class RxDiffUtilAndroidTest {
 
-    static final Func1<List<String>, Integer> listSize = new Func1<List<String>, Integer>() {
+    static final Function<List<String>, Integer> listSize = new Function<List<String>, Integer>() {
         @Override
-        public Integer call(List<String> list) {
+        public Integer apply(List<String> list) {
             return list == null ? 0 : list.size();
         }
     };
@@ -47,85 +47,86 @@ public class RxDiffUtilAndroidTest {
     );
 
     AndroidTestAdapter<List<String>> adapter;
-    Func1<Observable<List<String>>, Completable> rxDiff;
-
-    TestSubscriber<List<String>> subscriber;
+    Function<Flowable<List<String>>, Completable> rxDiff;
+    TestObserver observer;
 
     @Before
     public void setup() {
-        adapter = new AndroidTestAdapter<>(listSize);
+        adapter = new AndroidTestAdapter<>(listSize, Collections.<String>emptyList());
         rxDiff = applyDiff(adapter, adapter);
-        subscriber = TestSubscriber.create();
+        observer = TestObserver.create();
     }
 
     @Test
     public void applyDiff_empty() throws Exception {
-        adapter.subscribe(subscriber);
-        Observable.from(values)
-                .first()
+        adapter.subscribe(observer);
+        TestObserver subscriber = Flowable.fromIterable(values)
+                .take(1)
                 .to(rxDiff)
-                .subscribe(subscriber);
+                .test();
         subscriber.awaitTerminalEvent();
 
+        observer.assertNoErrors();
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertComplete();
         subscriber.assertValue(values.get(0));
     }
 
     @Test
     public void applyDiff_full() throws Exception {
-        adapter.subscribe(subscriber);
-        Observable.from(values)
+        adapter.subscribe(observer);
+        TestObserver subscriber = Flowable.fromIterable(values)
                 .skip(1)
-                .first()
-                .subscribe(subscriber);
+                .take(1)
+                .to(rxDiff)
+                .test();
         subscriber.awaitTerminalEvent();
 
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertComplete();
         subscriber.assertValue(values.get(1));
     }
 
     @Test
     public void applyDiff_full_full() throws Exception {
-        adapter.subscribe(subscriber);
-        Observable.from(values)
+        adapter.subscribe(observer);
+        TestObserver subscriber = Flowable.fromIterable(values)
                 .skip(1)
                 .take(2)
                 .to(rxDiff)
-                .subscribe(subscriber);
+                .test();
         subscriber.awaitTerminalEvent();
 
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertComplete();
         subscriber.assertValues(values.get(1), values.get(2));
     }
 
     @Test
     public void applyDiff_full_empty() throws Exception {
-        adapter.subscribe(subscriber);
-        Observable.from(values)
+        adapter.subscribe(observer);
+        TestObserver subscriber = Flowable.fromIterable(values)
                 .skip(2)
                 .take(2)
                 .to(rxDiff)
-                .subscribe(subscriber);
+                .test();
         subscriber.awaitTerminalEvent();
 
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertComplete();
         subscriber.assertValues(values.get(2), values.get(3));
     }
 
     @Test
     public void applyDiff_stream() throws Exception {
-        adapter.subscribe(subscriber);
-        Observable.from(values)
+        adapter.subscribe(observer);
+        TestObserver subscriber = Flowable.fromIterable(values)
                 .to(rxDiff)
-                .subscribe(subscriber);
+                .test();
         subscriber.awaitTerminalEvent();
 
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertComplete();
         subscriber.assertValues(values.toArray(new List[values.size()]));
     }
 
@@ -133,21 +134,21 @@ public class RxDiffUtilAndroidTest {
     public void applyDiff_concurrently() throws Exception {
         rxDiff = applyDiff(adapter, adapter.notifyOnGet());
 
-        adapter.subscribe(subscriber);
-        Observable.from(values)
+        adapter.subscribe(observer);
+        TestObserver subscriber = Flowable.fromIterable(values)
                 .skip(1)
                 .to(rxDiff)
-                .subscribe(subscriber);
+                .test();
         subscriber.awaitTerminalEvent();
 
         subscriber.assertError(ConcurrentModificationException.class);
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertNoValues();
     }
 
-    Func1<Observable<List<String>>, Completable>
+    Function<Flowable<List<String>>, Completable>
     applyDiff(final AndroidTestAdapter<List<String>> adapter,
-              final Func1<AndroidTestAdapter<List<String>>, List<String>> object) {
+              final Function<AndroidTestAdapter<List<String>>, List<String>> object) {
         return new AndroidTestFunction<>(adapter, object);
     }
 }

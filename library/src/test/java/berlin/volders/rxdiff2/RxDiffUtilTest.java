@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView.Adapter;
@@ -28,11 +28,12 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.ref.WeakReference;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import berlin.volders.rxdiff.RxDiffUtil.Callback2;
-import rx.functions.Func1;
-import rx.observers.TestSubscriber;
-import rx.subjects.PublishSubject;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback2;
+import io.reactivex.functions.Function;
+import io.reactivex.processors.PublishProcessor;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subscribers.TestSubscriber;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -51,12 +52,11 @@ public class RxDiffUtilTest {
     @Mock
     Callback2 callback2;
     @Mock
-    Func1 function;
+    Function function;
     @Mock
     DiffUtil.Callback cb;
 
-    TestSubscriber subscriber;
-    PublishSubject emitter;
+    PublishProcessor emitter;
     RxDiffUtil rxDiffUtil;
 
     @BeforeClass
@@ -68,8 +68,7 @@ public class RxDiffUtilTest {
     public void setup() {
         doReturn(cb).when(callback).diffUtilCallback(any(Adapter.class), any());
         doReturn(cb).when(callback2).diffUtilCallback(any(), any());
-        subscriber = TestSubscriber.create();
-        emitter = PublishSubject.create();
+        emitter = PublishProcessor.create();
         rxDiffUtil = new RxDiffUtil(new WeakReference(adapter), emitter);
     }
 
@@ -78,7 +77,7 @@ public class RxDiffUtilTest {
         Object o = 1;
 
         RxDiffResult rxDiffResult = rxDiffUtil.calculateDiff(callback);
-        rxDiffResult.o.subscribe(subscriber);
+        TestSubscriber subscriber = rxDiffResult.o.test();
         emitter.onNext(o);
 
         OnCalculateDiffResult result = (OnCalculateDiffResult) subscriber.getOnNextEvents().get(0);
@@ -87,7 +86,7 @@ public class RxDiffUtilTest {
         assertThat(result.o, is(o));
         verify(callback).diffUtilCallback(any(Adapter.class), any());
         subscriber.assertNoErrors();
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertValueCount(1);
     }
 
@@ -96,7 +95,7 @@ public class RxDiffUtilTest {
         Object o = 1;
 
         RxDiffResult rxDiffResult = rxDiffUtil.calculateDiff(callback, false);
-        rxDiffResult.o.subscribe(subscriber);
+        TestSubscriber subscriber = rxDiffResult.o.test();
         emitter.onNext(o);
 
         OnCalculateDiffResult result = (OnCalculateDiffResult) subscriber.getOnNextEvents().get(0);
@@ -105,7 +104,7 @@ public class RxDiffUtilTest {
         assertThat(result.o, is(o));
         verify(callback).diffUtilCallback(any(Adapter.class), any());
         subscriber.assertNoErrors();
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertValueCount(1);
     }
 
@@ -114,7 +113,7 @@ public class RxDiffUtilTest {
         Object o = 1;
 
         RxDiffResult rxDiffResult = rxDiffUtil.calculateDiff(function, callback2);
-        rxDiffResult.o.subscribe(subscriber);
+        TestSubscriber subscriber = rxDiffResult.o.test();
         emitter.onNext(o);
 
         OnCalculateDiffResult result = (OnCalculateDiffResult) subscriber.getOnNextEvents().get(0);
@@ -122,9 +121,9 @@ public class RxDiffUtilTest {
         assertThat(result.o, is(o));
         assertThat(result.o, is(o));
         verify(callback2).diffUtilCallback(any(), any());
-        verify(function).call(any());
+        verify(function).apply(any());
         subscriber.assertNoErrors();
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertValueCount(1);
     }
 
@@ -133,7 +132,7 @@ public class RxDiffUtilTest {
         Object o = 1;
 
         RxDiffResult rxDiffResult = rxDiffUtil.calculateDiff(function, callback2, false);
-        rxDiffResult.o.subscribe(subscriber);
+        TestSubscriber subscriber = rxDiffResult.o.test();
         emitter.onNext(o);
 
         OnCalculateDiffResult result = (OnCalculateDiffResult) subscriber.getOnNextEvents().get(0);
@@ -141,9 +140,9 @@ public class RxDiffUtilTest {
         assertThat(result.o, is(o));
         assertThat(result.o, is(o));
         verify(callback2).diffUtilCallback(any(), any());
-        verify(function).call(any());
+        verify(function).apply(any());
         subscriber.assertNoErrors();
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertValueCount(1);
     }
 

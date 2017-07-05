@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.VisibleForTesting;
 import android.support.v7.util.DiffUtil;
@@ -25,9 +25,9 @@ import android.support.v7.widget.RecyclerView.AdapterDataObserver;
 import java.lang.ref.WeakReference;
 import java.util.ConcurrentModificationException;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import rx.Producer;
-import rx.functions.Action2;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Consumer;
 
 class OnCalculateDiffResult<A extends Adapter, T> extends AdapterDataObserver {
 
@@ -35,7 +35,7 @@ class OnCalculateDiffResult<A extends Adapter, T> extends AdapterDataObserver {
     boolean invalidated = false;
 
     @VisibleForTesting
-    final Producer p;
+    final Consumer<Long> p;
     @VisibleForTesting
     final WeakReference<A> adapter;
     @VisibleForTesting
@@ -43,7 +43,7 @@ class OnCalculateDiffResult<A extends Adapter, T> extends AdapterDataObserver {
     @VisibleForTesting
     final DiffResult diff;
 
-    OnCalculateDiffResult(WeakReference<A> adapter, T o, Callback<A, T> cb, boolean dm, Producer p) {
+    OnCalculateDiffResult(WeakReference<A> adapter, T o, Callback<A, T> cb, boolean dm, Consumer<Long> p) {
         this.adapter = adapter;
         A a = nonLeaking(adapter);
         a.registerAdapterDataObserver(this);
@@ -53,12 +53,12 @@ class OnCalculateDiffResult<A extends Adapter, T> extends AdapterDataObserver {
         this.p = p;
     }
 
-    void applyDiff(Action2<? super A, ? super T> onUpdate) {
+    void applyDiff(BiConsumer<? super A, ? super T> onUpdate) throws Exception {
         A adapter = nonLeaking(this.adapter);
         checkConcurrency(adapter);
-        onUpdate.call(adapter, o);
+        onUpdate.accept(adapter, o);
         diff.dispatchUpdatesTo(adapter);
-        p.request(1);
+        p.accept(1L);
     }
 
     @VisibleForTesting

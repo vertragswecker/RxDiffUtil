@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,15 +23,15 @@ import android.support.v7.widget.RecyclerView.Adapter;
 
 import java.lang.ref.WeakReference;
 
-import rx.Completable;
-import rx.Observable;
-import rx.functions.Func1;
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.functions.Function;
 
 /**
  * {@code RxDiffUtil} calculates and applies the diff between new and old data.
  * The {@code RxDiffUtil} instance should be applied to an observable with the
- * {@link Observable#to(Func1)} method. After chaining all actions, this also
- * transforms the {@link Observable} into a shared {@link Completable}.
+ * {@link Flowable#to(Function)} method. After chaining all actions, this also
+ * transforms the {@link Flowable} into a shared {@link Completable}.
  * <pre>
  * service.observeData()
  *        .compose(transformer)
@@ -48,9 +48,9 @@ import rx.functions.Func1;
 public class RxDiffUtil<A extends Adapter, T> {
 
     final WeakReference<A> adapter;
-    final Observable<T> o;
+    final Flowable<T> o;
 
-    RxDiffUtil(WeakReference<A> adapter, Observable<T> o) {
+    RxDiffUtil(WeakReference<A> adapter, Flowable<T> o) {
         this.adapter = adapter;
         this.o = o;
     }
@@ -77,7 +77,7 @@ public class RxDiffUtil<A extends Adapter, T> {
      * @param cb callback to provide the {@link DiffUtil.Callback} to calculate the diff
      * @return an {@link RxDiffResult} to apply to the adapter
      */
-    public RxDiffResult<A, T> calculateDiff(@NonNull Func1<? super A, ? extends T> o, @NonNull Callback2<T> cb) {
+    public RxDiffResult<A, T> calculateDiff(@NonNull Function<? super A, ? extends T> o, @NonNull Callback2<T> cb) {
         return calculateDiff(o, cb, true);
     }
 
@@ -87,7 +87,7 @@ public class RxDiffUtil<A extends Adapter, T> {
      * @param dm should try to detect moved items
      * @return an {@link RxDiffResult} to apply to the adapter
      */
-    public RxDiffResult<A, T> calculateDiff(@NonNull Func1<? super A, ? extends T> o, @NonNull Callback2<T> cb, boolean dm) {
+    public RxDiffResult<A, T> calculateDiff(@NonNull Function<? super A, ? extends T> o, @NonNull Callback2<T> cb, boolean dm) {
         return calculateDiff(new RxDiffUtilCallback1<>(o, cb), dm);
     }
 
@@ -95,9 +95,9 @@ public class RxDiffUtil<A extends Adapter, T> {
      * @param adapter the adapter to apply the diff to
      * @param <T>     type of the data set
      * @param <A>     type of the adapter
-     * @return a transformer function to use with {@link Observable#to(Func1)}
+     * @return a transformer function to use with {@link Flowable#to(Function)}
      */
-    public static <A extends Adapter, T> Func1<Observable<T>, RxDiffUtil<A, T>> with(final A adapter) {
+    public static <A extends Adapter, T> Function<Flowable<T>, RxDiffUtil<A, T>> with(final A adapter) {
         return new ToRxDiffUtil<>(adapter);
     }
 
@@ -135,7 +135,7 @@ public class RxDiffUtil<A extends Adapter, T> {
     }
 
     /**
-     * Exception thrown if the {@link Observable} modified with {@code RxDiffUtil}
+     * Exception thrown if the {@link Flowable} modified with {@code RxDiffUtil}
      * is still active after the adapter was cleared.
      */
     public static class SubscriptionLeak extends IllegalStateException {

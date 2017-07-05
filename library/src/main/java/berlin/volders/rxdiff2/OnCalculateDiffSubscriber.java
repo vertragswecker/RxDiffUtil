@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.VisibleForTesting;
 import android.support.v7.widget.RecyclerView.Adapter;
 
+import org.reactivestreams.Subscriber;
+
 import java.lang.ref.WeakReference;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import rx.Observer;
-import rx.Producer;
-import rx.Subscriber;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import io.reactivex.functions.Consumer;
+import io.reactivex.subscribers.DisposableSubscriber;
 
-class OnCalculateDiffSubscriber<A extends Adapter, T> extends Subscriber<T> {
+class OnCalculateDiffSubscriber<A extends Adapter, T> extends DisposableSubscriber<T> {
 
-    private final Producer p = new Producer() {
+    private final Consumer<Long> p = new Consumer<Long>() {
         @Override
-        public void request(long n) {
+        public void accept(Long n) {
             OnCalculateDiffSubscriber.this.request(n);
         }
     };
 
-    private final Observer<? super OnCalculateDiffResult<A, T>> observer;
+    private final Subscriber<? super OnCalculateDiffResult<A, T>> observer;
     @VisibleForTesting
     final WeakReference<A> adapter;
     @VisibleForTesting
@@ -45,7 +46,7 @@ class OnCalculateDiffSubscriber<A extends Adapter, T> extends Subscriber<T> {
 
     OnCalculateDiffSubscriber(Subscriber<? super OnCalculateDiffResult<A, T>> subscriber,
                               WeakReference<A> adapter, Callback<A, T> cb, boolean dm) {
-        super(subscriber);
+        super();
         this.observer = subscriber;
         this.adapter = adapter;
         this.cb = cb;
@@ -59,10 +60,10 @@ class OnCalculateDiffSubscriber<A extends Adapter, T> extends Subscriber<T> {
 
     @Override
     public void onNext(T o) {
-        if (!isUnsubscribed()) {
+        if (!isDisposed()) {
             try {
                 OnCalculateDiffResult<A, T> result = new OnCalculateDiffResult<>(adapter, o, cb, dm, p);
-                if (!isUnsubscribed()) {
+                if (!isDisposed()) {
                     observer.onNext(result);
                 }
             } catch (Throwable throwable) {
@@ -72,15 +73,15 @@ class OnCalculateDiffSubscriber<A extends Adapter, T> extends Subscriber<T> {
     }
 
     @Override
-    public void onCompleted() {
-        if (!isUnsubscribed()) {
-            observer.onCompleted();
+    public void onComplete() {
+        if (!isDisposed()) {
+            observer.onComplete();
         }
     }
 
     @Override
     public void onError(Throwable e) {
-        if (!isUnsubscribed()) {
+        if (!isDisposed()) {
             observer.onError(e);
         }
     }

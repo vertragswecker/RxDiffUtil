@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView.Adapter;
@@ -29,11 +29,10 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.lang.ref.WeakReference;
 import java.util.ConcurrentModificationException;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import rx.Producer;
-import rx.functions.Action2;
-import rx.observers.TestSubscriber;
-import rx.subjects.PublishSubject;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Consumer;
+import io.reactivex.processors.PublishProcessor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -43,19 +42,18 @@ import static org.mockito.Mockito.verify;
 public class RxDiffResultTest {
 
     @Mock
-    Action2 action;
+    BiConsumer action;
     @Mock
     Adapter adapter;
     @Mock
     Callback callback;
     @Mock
-    Producer producer;
+    Consumer producer;
     @Mock
     DiffUtil.Callback cb;
 
     RxDiffResult rxDiffResult;
-    PublishSubject emitter;
-    TestSubscriber subscriber;
+    PublishProcessor emitter;
 
     @BeforeClass
     public static void init() {
@@ -65,20 +63,19 @@ public class RxDiffResultTest {
     @Before
     public void setup() {
         doReturn(cb).when(callback).diffUtilCallback(any(Adapter.class), any());
-        emitter = PublishSubject.create();
-        subscriber = TestSubscriber.create();
+        emitter = PublishProcessor.create();
         rxDiffResult = new RxDiffResult(emitter);
     }
 
     @Test
     public void applyDiff() throws Exception {
-        rxDiffResult.applyDiff(action).subscribe(subscriber);
+        rxDiffResult.applyDiff(action).test();
 
         emitResult(1);
         emitResult(2);
 
-        verify(action).call(adapter, 1);
-        verify(action).call(adapter, 2);
+        verify(action).accept(adapter, 1);
+        verify(action).accept(adapter, 2);
         subscriber.assertNoErrors();
         subscriber.assertNotCompleted();
         subscriber.assertNoValues();
@@ -86,11 +83,11 @@ public class RxDiffResultTest {
 
     @Test
     public void applyDiff_concurrently() throws Exception {
-        rxDiffResult.applyDiff(action).subscribe(subscriber);
-        rxDiffResult.applyDiff(action).subscribe(subscriber);
+        rxDiffResult.applyDiff(action).test();
+        rxDiffResult.applyDiff(action).test();
         emitResult(1);
 
-        verify(action).call(adapter, 1);
+        verify(action).accept(adapter, 1);
         subscriber.assertError(ConcurrentModificationException.class);
         subscriber.assertNotCompleted();
         subscriber.assertNoValues();

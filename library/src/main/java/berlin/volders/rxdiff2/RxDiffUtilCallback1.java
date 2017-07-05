@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -22,9 +22,9 @@ import android.support.annotation.VisibleForTesting;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView.Adapter;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import berlin.volders.rxdiff.RxDiffUtil.Callback2;
-import rx.functions.Func1;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback2;
+import io.reactivex.functions.Function;
 
 /**
  * {@link Callback} wrapping a {@link Callback2} with a {@code Func0} providing the old value.
@@ -34,11 +34,11 @@ import rx.functions.Func1;
 class RxDiffUtilCallback1<A extends Adapter, T> implements Callback<A, T> {
 
     @VisibleForTesting
-    final Func1<? super A, ? extends T> o;
+    final Function<? super A, ? extends T> o;
     @VisibleForTesting
     final Callback2<T> cb;
 
-    RxDiffUtilCallback1(Func1<? super A, ? extends T> o, Callback2<T> cb) {
+    RxDiffUtilCallback1(Function<? super A, ? extends T> o, Callback2<T> cb) {
         this.o = o;
         this.cb = cb;
     }
@@ -46,6 +46,10 @@ class RxDiffUtilCallback1<A extends Adapter, T> implements Callback<A, T> {
     @Override
     @NonNull
     public DiffUtil.Callback diffUtilCallback(@NonNull A adapter, @Nullable T o) {
-        return cb.diffUtilCallback(this.o.call(adapter), o);
+        try {
+            return cb.diffUtilCallback(this.o.apply(adapter), o);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

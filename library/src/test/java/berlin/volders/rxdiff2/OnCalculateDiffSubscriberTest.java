@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView.Adapter;
@@ -27,8 +27,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.ref.WeakReference;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import rx.observers.TestSubscriber;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback;
+import io.reactivex.subscribers.TestSubscriber;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -62,21 +62,21 @@ public class OnCalculateDiffSubscriberTest {
 
         diff.onNext(value);
 
-        OnCalculateDiffResult<Adapter, String> result = subscriber.getOnNextEvents().get(0);
+        OnCalculateDiffResult<Adapter, String> result = subscriber.getEvents().get(0);
         assertThat(result.adapter.get(), is(diff.adapter.get()));
         assertThat(result.o, is(value));
         assertThat(result.diff, notNullValue());
         subscriber.assertNoErrors();
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertValueCount(1);
     }
 
     @Test
     public void onCompleted() throws Exception {
-        diff.onCompleted();
+        diff.onComplete();
 
         subscriber.assertNoErrors();
-        subscriber.assertCompleted();
+        subscriber.assertComplete();
         subscriber.assertNoValues();
     }
 
@@ -87,7 +87,7 @@ public class OnCalculateDiffSubscriberTest {
         diff.onError(e);
 
         subscriber.assertError(e);
-        subscriber.assertNotCompleted();
+        subscriber.assertNotComplete();
         subscriber.assertNoValues();
     }
 }

@@ -14,34 +14,28 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.annotation.VisibleForTesting;
-import android.support.v7.widget.RecyclerView.Adapter;
+import android.support.v7.widget.RecyclerView;
 
 import java.lang.ref.WeakReference;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-import rx.Observable;
-import rx.Subscriber;
+import io.reactivex.Flowable;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Function;
 
-class OnCalculateDiff<A extends Adapter, T> implements Observable.Operator<OnCalculateDiffResult<A, T>, T> {
+class ToRxDiffUtil<A extends RecyclerView.Adapter, T> implements Function<Flowable<T>, RxDiffUtil<A, T>> {
 
     @VisibleForTesting
     final WeakReference<A> adapter;
-    @VisibleForTesting
-    final Callback<A, T> cb;
-    @VisibleForTesting
-    final boolean dm;
 
-    OnCalculateDiff(WeakReference<A> adapter, Callback<A, T> cb, boolean dm) {
-        this.adapter = adapter;
-        this.cb = cb;
-        this.dm = dm;
+    ToRxDiffUtil(A adapter) {
+        this.adapter = new WeakReference<>(adapter);
     }
 
     @Override
-    public OnCalculateDiffSubscriber<A, T> call(Subscriber<? super OnCalculateDiffResult<A, T>> subscriber) {
-        return new OnCalculateDiffSubscriber<>(subscriber, adapter, cb, dm);
+    public RxDiffUtil<A, T> apply(@NonNull Flowable<T> o) throws Exception {
+        return new RxDiffUtil<>(adapter, o);
     }
 }

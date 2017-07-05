@@ -14,38 +14,33 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.lang.ref.WeakReference;
+import berlin.volders.rxdiff2.RxDiffUtil.Callback2;
+import io.reactivex.functions.Function;
 
-import berlin.volders.rxdiff.RxDiffUtil.Callback;
-
-import static android.support.v7.widget.RecyclerView.Adapter;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
-public class OnCalculateDiffTest {
+public class RxDiffUtilCallback1Test {
 
     @Mock
-    Adapter adapter;
+    Callback2 callback2;
     @Mock
-    Callback callback;
+    Function function;
 
     @Test
-    public void call() throws Exception {
-        OnCalculateDiff calculateDiff
-                = new OnCalculateDiff(new WeakReference(adapter), callback, false);
+    public void diffUtilCallback() throws Exception {
+        RxDiffUtilCallback1 callback = new RxDiffUtilCallback1(function, callback2);
 
-        OnCalculateDiffSubscriber subscriber = calculateDiff.call(null);
+        callback.diffUtilCallback(null, null);
 
-        assertThat(subscriber.adapter, is(calculateDiff.adapter));
-        assertThat(subscriber.cb, is(calculateDiff.cb));
-        assertThat(subscriber.dm, is(calculateDiff.dm));
+        verify(callback2).diffUtilCallback(any(), any());
     }
 }

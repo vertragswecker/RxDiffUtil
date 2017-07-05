@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package berlin.volders.rxdiff;
+package berlin.volders.rxdiff2;
 
 import android.support.v7.util.DiffUtil;
 
-import rx.functions.Func1;
+import io.reactivex.functions.Function;
 
 class AndroidTestDiffUtilCallback<T> extends DiffUtil.Callback {
 
     final T oldData;
     final T newData;
-    final Func1<T, Integer> sizeOf;
+    final Function<T, Integer> sizeOf;
 
-    AndroidTestDiffUtilCallback(T oldData, T newData, Func1<T, Integer> sizeOf) {
+    AndroidTestDiffUtilCallback(T oldData, T newData, Function<T, Integer> sizeOf) {
         this.oldData = oldData;
         this.newData = newData;
         this.sizeOf = sizeOf;
@@ -34,12 +34,20 @@ class AndroidTestDiffUtilCallback<T> extends DiffUtil.Callback {
 
     @Override
     public int getOldListSize() {
-        return sizeOf.call(oldData);
+        try {
+            return sizeOf.apply(oldData);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 
     @Override
     public int getNewListSize() {
-        return sizeOf.call(newData);
+        try {
+            return sizeOf.apply(newData);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 
     @Override
